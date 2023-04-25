@@ -13,3 +13,5 @@ BraceWrapping:
   BeforeCatch:     true
   BeforeElse:      true
   IndentBraces:    false
+
+ColumnLimit: 160

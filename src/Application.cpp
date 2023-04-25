@@ -6,14 +6,14 @@
 #include <string>
 
 #define LOG(x) std::cout << x << std::
-#define ASSERT(x)                                                              \
-    if (!(x))                                                                  \
+#define ASSERT(x)                                                                                                                                              \
+    if (!(x))                                                                                                                                                  \
         __debugbreak();
 
 #ifdef _DEBUG
-#define GLCall(x)                                                              \
-    GLClearError();                                                            \
-    x;                                                                         \
+#define GLCall(x)                                                                                                                                              \
+    GLClearError();                                                                                                                                            \
+    x;                                                                                                                                                         \
     ASSERT(GLLogCall(#x, __FILE__, __LINE__))
 #else
 #define GLCall(x) x
@@ -30,8 +30,7 @@ static bool GLLogCall(const char *function, const char *file, int line)
     while (GLenum error = glGetError())
     {
         std::cout << "[OPENGL ERROR]"
-                  << " CODE: " << error << " at " << line << " in " << function
-                  << " in file " << file << std::endl;
+                  << " CODE: " << error << " at " << line << " in " << function << " in file " << file << std::endl;
         return false;
     }
 
@@ -95,8 +94,7 @@ static unsigned int CompileShader(unsigned int type, const std::string &source)
         glGetShaderiv(id, GL_INFO_LOG_LENGTH, &length);
         char *message = (char *)alloca(length * sizeof(char));
         glGetShaderInfoLog(id, length, &length, message);
-        std::cout << "FAILED TO COMPILE : "
-                  << (type == GL_VERTEX_SHADER ? "[VS]" : "[FS]") << std::endl;
+        std::cout << "FAILED TO COMPILE : " << (type == GL_VERTEX_SHADER ? "[VS]" : "[FS]") << std::endl;
         std::cout << message << std::endl;
         glDeleteShader(id);
         return 0;
@@ -105,8 +103,7 @@ static unsigned int CompileShader(unsigned int type, const std::string &source)
     return id;
 }
 
-static unsigned int CreateShader(const std::string &vertexShader,
-                                 const std::string &fragmentShader)
+static unsigned int CreateShader(const std::string &vertexShader, const std::string &fragmentShader)
 {
     unsigned int program = glCreateProgram();
     unsigned int vs = CompileShader(GL_VERTEX_SHADER, vertexShader);
@@ -130,6 +127,10 @@ int main(void)
     /* Initialize the library */
     if (!glfwInit())
         return -1;
+
+    glfwWindowHint(GLFW_CONTEXT_VERSION_MAJOR, 3);
+    glfwWindowHint(GLFW_CONTEXT_VERSION_MINOR, 3);
+    glfwWindowHint(GLFW_OPENGL_PROFILE, GLFW_OPENGL_CORE_PROFILE);
 
     /* Create a windowed mode window and its OpenGL context */
     window = glfwCreateWindow(640, 640, "Window", NULL, NULL);
@@ -157,25 +158,25 @@ int main(void)
 
     unsigned int indices[] = {0, 1, 2, 2, 3, 0};
 
+    unsigned int vao;
+    GLCall(glGenVertexArrays(1, &vao));
+    GLCall(glBindVertexArray(vao));
+
     unsigned int buffer;
     GLCall(glGenBuffers(1, &buffer));
     GLCall(glBindBuffer(GL_ARRAY_BUFFER, buffer));
-    GLCall(glBufferData(GL_ARRAY_BUFFER, 4 * 2 * sizeof(float), positions,
-                        GL_STATIC_DRAW));
+    GLCall(glBufferData(GL_ARRAY_BUFFER, 4 * 2 * sizeof(float), positions, GL_STATIC_DRAW));
 
     GLCall(glEnableVertexAttribArray(0));
-    GLCall(
-        glVertexAttribPointer(0, 2, GL_FLOAT, GL_FALSE, sizeof(float) * 2, 0));
+    GLCall(glVertexAttribPointer(0, 2, GL_FLOAT, GL_FALSE, sizeof(float) * 2, 0));
 
     unsigned int ibo;
     GLCall(glGenBuffers(1, &ibo));
     GLCall(glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, ibo));
-    GLCall(glBufferData(GL_ELEMENT_ARRAY_BUFFER, 6 * sizeof(unsigned int),
-                        indices, GL_STATIC_DRAW));
+    GLCall(glBufferData(GL_ELEMENT_ARRAY_BUFFER, 6 * sizeof(unsigned int), indices, GL_STATIC_DRAW));
 
     ShaderProgramSource source = parseShader("res/shaders/basic.shader");
-    unsigned int shader =
-        CreateShader(source.VertexSource, source.FragmentSource);
+    unsigned int shader = CreateShader(source.VertexSource, source.FragmentSource);
 
     GLCall(glUseProgram(shader));
 
@@ -186,20 +187,29 @@ int main(void)
     float increment = 0.01f;
     GLCall(glUniform4f(location, r, 0.0f, 1.0f, 1.0f));
 
+    GLCall(glBindVertexArray(0));
+    GLCall(glUseProgram(0));
+    GLCall(glBindBuffer(GL_ARRAY_BUFFER, 0));
+    GLCall(glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, 0));
+
     /* Loop until the user closes the window */
     while (!glfwWindowShouldClose(window))
     {
-        r += increment;
 
+        /* Render here */
+        GLCall(glClear(GL_COLOR_BUFFER_BIT));
+
+        GLCall(glUseProgram(shader));
+        GLCall(glUniform4f(location, r, 0.0f, 1.0f, 1.0f));
+
+        GLCall(glBindVertexArray(vao));
+        GLCall(glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, ibo));
+
+        r += increment;
         if (r >= 1.0f or r <= 0.0f)
         {
             increment = -increment;
         }
-
-        GLCall(glUniform4f(location, r, 0.0f, 1.0f, 1.0f));
-
-        /* Render here */
-        GLCall(glClear(GL_COLOR_BUFFER_BIT));
 
         GLCall(glDrawElements(GL_TRIANGLES, 6, GL_UNSIGNED_INT, nullptr));
 
